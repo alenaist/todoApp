@@ -25,9 +25,33 @@ body {
 }
 
 h1 {
-  color: #6a1b9a;
+  color: #fff;
   font-size: 2.5rem;
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  margin-top: 0;
+  margin-left: 15px;
+  position: relative;
+  top: -30px;
+  &:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 42px;
+    width: 90px;
+    height: 170px;
+    rotate: 85deg;
+    left: 24px;
+    background-color: #9b132c;
+    margin-top: -81px;
+  }
+  
+  span {
+    z-index: 1;
+  }
+}
+
+.todo-info {
+  margin-top: -10px;
 }
 
 input {
@@ -86,6 +110,24 @@ button {
   }
 }
 
+.todo-h1 {     
+  display: block;
+  font-size: 60px;
+  rotate: -5deg;
+  translate: -14px -15px;
+  letter-spacing: -5px;
+  z-index:2;
+
+ }
+.list-h1 {
+  display: block;
+  margin-top: -25px;
+  position: relative;
+
+    
+}
+
+
 /* Two-column layout */
 .two-column-layout {
   display: flex;
@@ -125,12 +167,21 @@ button {
   border-radius: 12px;
   border: 1px solid black;
   padding: 20px;
+
+  padding-top: 30px;
+  position: relative;
+
+  margin-top: 10px;
 }
 
 .task-list h3 {
   color: #6a1b9a;
   font-size: 1.5rem;
-  margin-bottom: 15px;
+  margin: 0;
+  position: absolute;
+  top: -15px;
+  background: white;
+  padding: 0 10px;
 }
 
 .task-list ul {

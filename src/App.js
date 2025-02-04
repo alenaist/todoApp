@@ -226,7 +226,6 @@ useEffect(() => {
       };
       setTodo([newTaskObj, ...todo]);
       setNewTask('');
-      setSelectedImportance('medium');
     }
   };
 

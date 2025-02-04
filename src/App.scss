@@ -163,6 +163,8 @@ button {
 }
 
 .task-list {
+  display: flex;
+  flex-direction: column;
   background-color: #ffffff;
   border-radius: 12px;
   border: 1px solid black;
@@ -173,7 +175,18 @@ button {
 
   margin-top: 10px;
 }
-
+.delete-all-button-container {
+  display: flex;
+  justify-content: flex-end;
+  button {
+    background-color: transparent;
+    color: black;
+    font-weight: 600;
+    padding: 5px 10px;
+    border: 1px solid black; 
+    margin: 0;
+  }
+}
 .task-list h3 {
   color: #6a1b9a;
   font-size: 1.5rem;
@@ -182,6 +195,7 @@ button {
   top: -15px;
   background: white;
   padding: 0 10px;
+  left: 12px;
 }
 
 .task-list ul {
@@ -289,13 +303,6 @@ button {
   display: flex;
   align-items: space-between;
   justify-content: space-between;
-  button {
-    background-color: transparent;
-    color: black;
-    font-weight: 600;
-    padding: 0; 
-    margin: 0;
-  }
 }
 
 .completed-task {

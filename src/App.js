@@ -610,14 +610,6 @@ useEffect(() => {
                             {isCompletedVisible ? ' ▼' : ' ▶'}
                           </span>
                         </h3>
-
-                        <button
-                        onClick={() => deleteAllCompletedTasks()}
-                        disabled={completed.length === 0}
-                        className="delete-all-button"
-                      >
-                        Delete All
-                      </button>
         </div>
 
 
@@ -656,7 +648,17 @@ useEffect(() => {
                           </ul>
                         )}
                         {provided.placeholder}
+                        <div className="delete-all-button-container">
+                          <button
+                          onClick={() => deleteAllCompletedTasks()}
+                          disabled={completed.length === 0}
+                          className="delete-all-button"
+                        >
+                          Delete All
+                        </button>
+                        </div>
                       </div>
+                      
                     )}
                   </Droppable>
                 </div>

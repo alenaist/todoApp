@@ -1,4 +1,8 @@
 import React from 'react';
+import { SkillLevelBasic } from '../icons/LowLevel';
+import { SkillLevelIntermediate } from '../icons/MediumLevel';
+import { SkillLevelAdvanced } from '../icons/HighLevel';
+import CustomDropdown from '../custom-dropdown/CustomDropdown';
 
 const TaskInput = ({
   newTask,
@@ -25,15 +29,9 @@ const TaskInput = ({
           placeholder="Que tenes que hacer?"
           disabled={isTimerRunning}
         />
-        <select
-          value={selectedImportance}
-          onChange={(e) => setSelectedImportance(e.target.value)}
-          disabled={isTimerRunning}
-        >
-          <option value="low">Low Importance</option>
-          <option value="medium">Medium Importance</option>
-          <option value="high">High Importance</option>
-        </select>
+
+        
+        <CustomDropdown selectedImportance={selectedImportance} setSelectedImportance={setSelectedImportance} />
       </div>
       <div className="button-container">
         <button

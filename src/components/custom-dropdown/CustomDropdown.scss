@@ -1,0 +1,19 @@
+.dropdown-options {
+    border: 1px solid #ccc; 
+    position: 'absolute'; 
+    background-color: #fff;
+    z-index: 999;
+    position: absolute;
+    &> div {
+        padding: 15px;
+        cursor: pointer;
+        &:hover {
+            background-color: #f9f9f9;
+        }
+    }	
+}
+
+.dropdown-header {
+    cursor: pointer; border: 1px solid #ccc; padding: 15px; 
+    border-radius: 5px;
+}

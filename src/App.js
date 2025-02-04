@@ -13,6 +13,8 @@ import { Eye } from './components/icons/OpenEyeIcon';
 import { EyeClosed } from './components/icons/ClosedEyeIcon';
 import { Checkmark } from './components/icons/CheckIcon';
 import { Undo1 } from './components/icons/Undo';
+import TaskInput from './components/task-input/TaskInput';
+import CustomDropdown from './components/custom-dropdown/CustomDropdown';
 
 function App() {
   const [todo, setTodo] = useState([]);
@@ -21,7 +23,7 @@ function App() {
   const [completedHistory, setCompletedHistory] = useState([]);
 
   const [newTask, setNewTask] = useState('');
-  const [selectedImportance, setSelectedImportance] = useState('medium');
+  const [selectedImportance, setSelectedImportance] = useState('low');
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [taskToRemove, setTaskToRemove] = useState(null);
@@ -487,47 +489,9 @@ useEffect(() => {
               <h1><span className="todo-h1">TODO</span> <span className="list-h1">LIST:</span></h1>
               <p className="todo-info">Add your daily chores and learning. Complete them. Progress in life and in the game.</p>
 
-              <div className="task-input">
-                <div class="input-container">
-                  <input
-                    type="text"
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !isTimerRunning && newTask.trim()) {
-                        e.preventDefault();
-                        addTask();
-                      }
-                    }}
-                    placeholder="Que tenes que hacer?"
-                    disabled={isTimerRunning}
-                  />
 
-                  <select
-                    value={selectedImportance}
-                    onChange={(e) => setSelectedImportance(e.target.value)}
-                    disabled={isTimerRunning}
-                  >
-                    <option value="low">Low Importance</option>
-                    <option value="medium">Medium Importance</option>
-                    <option value="high">High Importance</option>
-                  </select>
-                </div>
-
-                <div class="button-container">
-                  <button
-                    onClick={addTask}
-                    disabled={isTimerRunning || !newTask.trim()}
-                    className={(isTimerRunning || !newTask.trim()) ? 'disabled' : ''}>
-                    Add Task
-                  </button>
-                  <button onClick={() => setIsTimerModalOpen(true)} disabled={isTimerRunning} className={ `add-button ${isTimerRunning ? 'disabled' : ''}`}>
-                    Add Timed Task
-                  </button>
-                </div>
-
-
-              </div>
+              <TaskInput newTask={newTask} setNewTask={setNewTask} selectedImportance={selectedImportance} setSelectedImportance={setSelectedImportance} addTask={addTask} setIsTimerModalOpen={setIsTimerModalOpen} isTimerRunning={isTimerRunning}/>  
+              
 
               <DragDropContext onDragEnd={onDragEnd}>
                 <div className="task-lists">

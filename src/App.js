@@ -30,9 +30,9 @@ function App() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const isFirstRender = useRef(true);
   const [isCompletedVisible, setIsCompletedVisible] = useState(false);
+  const isInitialLoad = useRef(true);
 
-  // Save user data to Firestore with improved error handling
-  const saveUserData = async (user) => {
+  const loadUserData = async (user) => {
     try {
       const userRef = doc(firestore, 'users', user.uid);
       const docSnap = await getDoc(userRef);
@@ -68,33 +68,14 @@ function App() {
       }
       return true;
     } catch (error) {
-      console.error('Error in saveUserData:', error);
+      console.error('Error in loadUserData:', error);
       return false;
     }
   };
 
-  // Update Firestore with improved guards against data wiping
-  const updateFirestore = async () => {
-    if (!user || !dataLoaded) {
-      console.log('Skipping Firestore update - no user or data not loaded');
-      return;
-    }
-  
-    // Guard against empty state updates
-    if (todo.length === 0 && completed.length === 0 && userLevel === 1 && progress === 0) {
-      console.log('Preventing update with empty state');
-      return;
-    }
-  
+  const saveUserData = async (user) => {
     try {
       const userRef = doc(firestore, 'users', user.uid);
-      // Check current data before update
-      const currentDoc = await getDoc(userRef);
-  
-      if (currentDoc.exists() && currentDoc.data().tasks?.length > 0 && todo.length === 0) {
-        console.log('Preventing overwrite of existing data with empty state');
-        return;
-      }
   
       await setDoc(userRef, {
         uid: user.uid,
@@ -105,20 +86,23 @@ function App() {
         progress: progress,
         tasks: todo,
         completedTasks: completed,
-        completedHistory: completedHistory, // Save completedHistory
+        completedHistory: completedHistory,
       }, { merge: true });
   
       console.log('Firestore updated successfully with data:', {
-        tasks: todo,
+        tasks: todo,  
         completedTasks: completed,
         completedHistory: completedHistory,
         level: userLevel,
-        progress: progress
+        progress: progress,
       });
+      return true;
     } catch (error) {
-      console.error('Error updating Firestore:', error);
+      console.error('Error in saveUserData:', error);
+      return false;
     }
   };
+
 
   // Google Sign-In Logic
   const signInWithGoogle = async () => {
@@ -126,7 +110,7 @@ function App() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       setUser(user);
-      await saveUserData(user);
+      await loadUserData(user);
     } catch (error) {
       console.error("Error signing in with Google:", error);
     }
@@ -146,20 +130,20 @@ function App() {
   // Improved auth state change handler
   useEffect(() => {
     let mounted = true;
-
+  
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!mounted) return;
-
+  
       if (user) {
         setUser(user);
         setIsLoading(true);
         try {
-          const success = await saveUserData(user);
+          const success = await loadUserData(user); // Load user data on auth state change
           if (success && mounted) {
             setDataLoaded(true);
           }
         } catch (error) {
-          console.error("Error saving user data:", error);
+          console.error("Error loading user data:", error);
         } finally {
           if (mounted) {
             setIsLoading(false);
@@ -171,27 +155,32 @@ function App() {
         setIsLoading(false);
       }
     });
-
+  
     return () => {
       mounted = false;
       unsubscribe();
     };
   }, []);
 
-  // Improved update effect with debounce
-  useEffect(() => {
-    if (!dataLoaded || isLoading || !user) {
-      return;
-    }
+ 
+useEffect(() => {
+  if (!user || !dataLoaded) {
+    return;
+  }
 
-    const timeoutId = setTimeout(() => {
-      updateFirestore().catch((error) => {
-        console.error('Error in update effect:', error);
-      });
-    }, 1000); // Debounce updates by 1 second
+  if (isInitialLoad.current) {
+    isInitialLoad.current = false;
+    return;
+  }
 
-    return () => clearTimeout(timeoutId);
-  }, [todo, completed, progress, userLevel, user, isLoading, dataLoaded]);
+  const timeoutId = setTimeout(() => {
+    saveUserData(user).catch((error) => {
+      console.error("Error saving user data:", error);
+    });
+  }, 1000);
+
+  return () => clearTimeout(timeoutId);
+}, [todo, completed, progress, userLevel, user, dataLoaded]);
 
   // Update progress and handle level-up
   const updateProgress = (newProgress) => {
@@ -282,30 +271,18 @@ function App() {
         }[task.importance];
   
         if (task.completed) {
-          // Undo completion: Move task back to todo
+          // Undo completion
           setCompleted(completed.filter(task => task.id !== id));
           setTodo([{ ...task, completed: false }, ...todo]);
-  
-          // Remove from completedHistory (if it exists)
-          setCompletedHistory((prevHistory) =>
-            prevHistory.filter((historyTask) => historyTask.id !== id)
-          );
-  
-          // Calculate new progress when undoing
-          const newProgress = progress - expPoints;
-          updateProgress(newProgress);
+          setCompletedHistory((prevHistory) => prevHistory.filter((historyTask) => historyTask.id !== id));
+          updateProgress(progress - expPoints);
         } else {
-          // Mark as completed: Move task to completed
+          // Mark as completed
           const completedTask = { ...task, completed: true, finishedDate: new Date().toISOString() };
           setTodo(todo.filter(task => task.id !== id));
           setCompleted([completedTask, ...completed]);
-  
-          // Add to completedHistory
           setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
-  
-          // Calculate new progress when completing
-          const newProgress = progress + expPoints;
-          updateProgress(newProgress);
+          updateProgress(progress + expPoints);
         }
       }
     }
@@ -344,8 +321,10 @@ function App() {
   const deleteAllCompletedTasks = () => {
     if (!isTimerRunning) {
       setCompleted([]); // Clear the completed tasks array
+
     }
   };
+
   const onDragEnd = (result) => {
     if (isTimerRunning) return;
   

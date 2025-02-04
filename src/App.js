@@ -11,6 +11,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { firestore } from './api/firebase';
 import { Eye } from './components/icons/OpenEyeIcon';
 import { EyeClosed } from './components/icons/ClosedEyeIcon';
+import { Checkmark } from './components/icons/CheckIcon';
+import { Undo1 } from './components/icons/Undo';
 
 function App() {
   const [todo, setTodo] = useState([]);
@@ -575,7 +577,7 @@ useEffect(() => {
                                    
                                     {task.type !== 'timed' && (
                                       <button onClick={() => toggleTaskCompletion(task.id)} disabled={isTimerRunning} className={`completed ${isTimerRunning ? 'disabled' : ''}`}>
-                                        {task.completed ? 'Undo' : 'Complete'}
+                                        {task.completed ? <Undo1 /> : <Checkmark />}
                                       </button>
                                     )}
                                     <button onClick={() => handleRemoveClick(task.id)} disabled={isTimerRunning} className={`delete ${isTimerRunning ? 'disabled' : ''}`}>
@@ -639,8 +641,8 @@ useEffect(() => {
                                     </div>
 
 
-                                      <button onClick={() => toggleTaskCompletion(task.id)} disabled={isTimerRunning} className={isTimerRunning ? 'disabled' : ''}>
-                                        Undo
+                                      <button onClick={() => toggleTaskCompletion(task.id)} disabled={isTimerRunning} className={isTimerRunning ? 'disabled' : 'undo-button'}>
+                                      <Undo1 /> 
                                       </button>
                                       <button onClick={() => handleRemoveClick(task.id)} disabled={isTimerRunning}  className={`delete ${isTimerRunning ? 'disabled' : ''}`}>
                                       </button>

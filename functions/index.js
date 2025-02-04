@@ -1,8 +1,50 @@
-/* eslint-disable object-curly-spacing, indent, max-len */
-import {onDocumentCreated, onDocumentDeleted} from "firebase-functions/v2/firestore";
+/* eslint-disable object-curly-spacing, indent, max-len, operator-linebreak, arrow-parens */
+import {onDocumentCreated, onDocumentDeleted, onDocumentWritten} from "firebase-functions/v2/firestore";
 import admin from "firebase-admin";
 
 admin.initializeApp();
+
+const calculateExpPoints = (task) => {
+  if (!task) return 0;
+  return {
+    low: 5,
+    medium: 10,
+    high: 20,
+  }[task.importance] || 10;
+};
+
+const calculateNewLevel = (currentLevel, currentProgress, expPoints, isGaining) => {
+  const currentTotalProgress = (currentLevel - 1) * 100 + currentProgress;
+  const updatedTotalProgress = Math.max(0, currentTotalProgress + (isGaining ? expPoints : -expPoints));
+
+  const MAX_LEVEL = 999;
+  const newLevel = Math.min(Math.floor(updatedTotalProgress / 100) + 1, MAX_LEVEL);
+  const remainingProgress = updatedTotalProgress % 100;
+
+  return { level: newLevel, progress: remainingProgress };
+};
+
+export const handleTaskUpdate = onDocumentWritten(
+  "users/{userId}",
+  async (event) => {
+    const after = event.data.after.data();
+    const before = event.data.before.data();
+
+    if (!before || !after) return;
+
+    const completedDiff = after.completedTasks.length - before.completedTasks.length;
+    if (completedDiff === 0) return;
+
+    const newTask = completedDiff > 0
+      ? after.completedTasks[0]
+      : before.completedTasks.find(t => !after.completedTasks.some(nt => nt.id === t.id));
+
+    const expPoints = calculateExpPoints(newTask);
+    const { level, progress } = calculateNewLevel(before.level, before.progress, expPoints, completedDiff > 0);
+
+    await event.data.after.ref.update({ level, progress });
+  },
+);
 
 // Handle task completion and level progression
 export const handleTaskCompletion = onDocumentCreated(

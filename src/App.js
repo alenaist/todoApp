@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.scss';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,12 +7,11 @@ import Timer from './components/timer/Timer';
 import TimerModal from './components/timer-modal/TimerModal';
 import Login from './components/login/Login';
 import { auth, googleProvider, signInWithPopup } from './api/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { firestore } from './api/firebase';
-import { Eye } from './components/icons/OpenEyeIcon';
-import { EyeClosed } from './components/icons/ClosedEyeIcon';
 import { Checkmark } from './components/icons/CheckIcon';
 import { Undo1 } from './components/icons/Undo';
+import UserProfile from './components/user-profile/UserProfile';
 
 function App() {
   const [todo, setTodo] = useState([]);
@@ -33,9 +32,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [avatarIsOpen, setAvatarIsOpen] = useState(false);
-  const isFirstRender = useRef(true);
   const [isCompletedVisible, setIsCompletedVisible] = useState(false);
-  const isInitialLoad = useRef(true);
 
   const loadUserData = async (user) => {
     try {
@@ -133,51 +130,49 @@ function App() {
   };
 
   // Improved auth state change handler
-  useEffect(() => {
-    let mounted = true;
-  
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!mounted) return;
-  
-      if (user) {
-        setUser(user);
-        setIsLoading(true);
-        try {
-          const success = await loadUserData(user); // Load user data on auth state change
-          if (success && mounted) {
-            setDataLoaded(true);
-          }
-        } catch (error) {
-          console.error("Error loading user data:", error);
-        } finally {
-          if (mounted) {
-            setIsLoading(false);
-          }
-        }
-      } else {
-        setUser(null);
-        setDataLoaded(false);
-        setIsLoading(false);
-      }
-    });
-  
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, []);
+// Replace the current useEffect with:
+// Update auth effect to prevent double load
+useEffect(() => {
+  let mounted = true;
+  setIsLoading(true);
 
+  const unsubscribe = auth.onAuthStateChanged(async (user) => {
+    if (!mounted) return;
+
+    if (user) {
+      setUser(user);
+      // Remove loadUserData call since onSnapshot handles it
+      const unsubscribeSnapshot = onSnapshot(doc(firestore, 'users', user.uid), 
+        (doc) => {
+          const data = doc.data();
+          if (!data) return;
+          
+          setUserLevel(data.level);
+          setProgress(data.progress);
+          setTodo(data.tasks || []);
+          setCompleted(data.completedTasks || []);
+          setCompletedHistory(data.completedHistory || []);
+          setDataLoaded(true);
+          setIsLoading(false);
+        }
+      );
+      return () => unsubscribeSnapshot();
+    } else {
+      setUser(null);
+      setDataLoaded(false);
+      setIsLoading(false);
+    }
+  });
+
+  return () => {
+    mounted = false;
+    unsubscribe();
+  };
+}, []);
  
 useEffect(() => {
-  if (!user || !dataLoaded) {
-    return;
-  }
-
-  if (isInitialLoad.current) {
-    isInitialLoad.current = false;
-    return;
-  }
-
+  if (!user || !dataLoaded) return;
+  
   const timeoutId = setTimeout(() => {
     saveUserData(user).catch((error) => {
       console.error("Error saving user data:", error);
@@ -186,31 +181,6 @@ useEffect(() => {
 
   return () => clearTimeout(timeoutId);
 }, [todo, completed, progress, userLevel, user, dataLoaded]);
-
-  // Update progress and handle level-up
-  const updateProgress = (newProgress) => {
-    // Convert current total progress (level * 100 + progress)
-    const currentTotalProgress = (userLevel - 1) * 100 + progress;
-    const updatedTotalProgress = currentTotalProgress + (newProgress - progress);
-
-    // Handle negative progress
-    if (updatedTotalProgress < 0) {
-      setProgress(0);
-      setUserLevel(1);
-      return;
-    }
-
-    // Calculate new level and remaining progress
-    const MAX_LEVEL = 999;
-    const newLevel = Math.min(Math.floor(updatedTotalProgress / 100) + 1, MAX_LEVEL);
-    const remainingProgress = updatedTotalProgress % 100;
-
-    // Update state
-    setUserLevel(newLevel);
-    setProgress(remainingProgress);
-
-    console.log(`Total Progress: ${updatedTotalProgress}, New Level: ${newLevel}, Remaining Progress: ${remainingProgress}`);
-  };
 
   // Add Task Logic
   const addTask = () => {
@@ -265,31 +235,25 @@ useEffect(() => {
   };
 
   // Toggle Task Completion Logic
-  const toggleTaskCompletion = (id) => {
-    if (!isTimerRunning) {
-      const task = todo.find(task => task.id === id) || completed.find(task => task.id === id);
-      if (task && task.type !== 'timed') {
-        const expPoints = {
-          low: 5,
-          medium: 10,
-          high: 20,
-        }[task.importance];
+  const toggleTaskCompletion = async (id) => {
+    if (isTimerRunning) return;
+    
+    const task = todo.find(task => task.id === id) || completed.find(task => task.id === id);
+    if (!task || task.type === 'timed') return;
   
-        if (task.completed) {
-          // Undo completion
-          setCompleted(completed.filter(task => task.id !== id));
-          setTodo([{ ...task, completed: false }, ...todo]);
-          setCompletedHistory((prevHistory) => prevHistory.filter((historyTask) => historyTask.id !== id));
-          updateProgress(progress - expPoints);
-        } else {
-          // Mark as completed
-          const completedTask = { ...task, completed: true, finishedDate: new Date().toISOString() };
-          setTodo(todo.filter(task => task.id !== id));
-          setCompleted([completedTask, ...completed]);
-          setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
-          updateProgress(progress + expPoints);
-        }
-      }
+    if (task.completed) {
+      setCompleted(completed.filter(t => t.id !== id));
+      setTodo([{ ...task, completed: false }, ...todo]);
+      setCompletedHistory(prev => prev.filter(t => t.id !== id));
+    } else {
+      const completedTask = { 
+        ...task, 
+        completed: true, 
+        finishedDate: new Date().toISOString() 
+      };
+      setTodo(todo.filter(t => t.id !== id));
+      setCompleted([completedTask, ...completed]);
+      setCompletedHistory(prev => [completedTask, ...prev]);
     }
   };
 
@@ -316,8 +280,6 @@ useEffect(() => {
   
       // Add to completedHistory
       setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
-  
-      updateProgress(progress + totalExpPoints);
       setIsTimerRunning(false);
       setRunningTaskId(null);
     }
@@ -414,9 +376,6 @@ useEffect(() => {
         // Add to completedHistory
         setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
   
-        // Calculate new progress when completing
-        const newProgress = progress + expPoints;
-        updateProgress(newProgress);
       } else if (source.droppableId === 'completed' && destination.droppableId === 'todo') {
         const updatedCompleted = Array.from(completed);
         const [movedTask] = updatedCompleted.splice(source.index, 1);
@@ -430,10 +389,6 @@ useEffect(() => {
         setCompletedHistory((prevHistory) =>
           prevHistory.filter((historyTask) => historyTask.id !== movedTask.id)
         );
-  
-        // Calculate new progress when undoing
-        const newProgress = progress - expPoints;
-        updateProgress(newProgress);
       }
     }
   };
@@ -447,38 +402,14 @@ useEffect(() => {
       <header className="App-header">
         {user ? (
           <div className="two-column-layout">
-            <div className='collapsable-container'>
-            <button 
-  className="collapsable-button" 
-  onClick={toggleBox}
->
-  {avatarIsOpen ? <EyeClosed /> : <Eye />}
-</button>
-              <div className="box">
-              <div className="avatar-column">
-              <div className="user-profile">
-                <div className="avatar"> 
-
-                  <img src={user.photoURL} alt="User Avatar" />
-                </div>
-
-               
-              </div>
-            </div>
-            
-
-              </div>
-
-              <div className="username">{user.displayName}</div>
-                <div className="current-level">Level: {userLevel}</div>
-                <div className="progress-bar">
-                  <div className="progress" style={{ width: `${progress}%` }} />
-                  <span className="progress-text">{progress}%</span>
-                </div>
-
-                <button className="completed-tasks-history-button">Completed task history</button>
-                <button className="sign-out-button" onClick={signOut}>Sign Out</button>
-            </div>
+     <UserProfile
+  user={user}
+  userLevel={userLevel}
+  progress={progress}
+  avatarIsOpen={avatarIsOpen}
+  toggleBox={toggleBox}
+  signOut={signOut}
+/>
 
 
 

@@ -9,6 +9,8 @@ import Login from './components/login/Login';
 import { auth, googleProvider, signInWithPopup } from './api/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { firestore } from './api/firebase';
+import { Eye } from './components/icons/OpenEyeIcon';
+import { EyeClosed } from './components/icons/ClosedEyeIcon';
 
 function App() {
   const [todo, setTodo] = useState([]);
@@ -28,6 +30,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [avatarIsOpen, setAvatarIsOpen] = useState(false);
   const isFirstRender = useRef(true);
   const [isCompletedVisible, setIsCompletedVisible] = useState(false);
   const isInitialLoad = useRef(true);
@@ -318,6 +321,26 @@ useEffect(() => {
     }
   };
 
+  function toggleBox() {
+    const box = document.querySelector('.box');
+    
+    if (box.style.height === '0px' || !box.style.height) {
+      // Expand to full content height
+      box.style.height = 'auto';
+      const fullHeight = box.scrollHeight + 'px';
+      box.style.height = '0px';
+      
+      requestAnimationFrame(() => {
+        box.style.height = fullHeight;
+        setAvatarIsOpen(true);
+      });
+    } else {
+      // Collapse
+      box.style.height = '0px';
+      setAvatarIsOpen(false);
+    }
+  }
+
   const deleteAllCompletedTasks = () => {
     if (!isTimerRunning) {
       setCompleted([]); // Clear the completed tasks array
@@ -422,16 +445,29 @@ useEffect(() => {
       <header className="App-header">
         {user ? (
           <div className="two-column-layout">
-            <div className="avatar-column">
+            <div className='collapsable-container'>
+            <button 
+  className="collapsable-button" 
+  onClick={toggleBox}
+>
+  {avatarIsOpen ? <EyeClosed /> : <Eye />}
+</button>
+              <div className="box">
+              <div className="avatar-column">
               <div className="user-profile">
-
-
                 <div className="avatar"> 
 
                   <img src={user.photoURL} alt="User Avatar" />
                 </div>
 
-                <div className="username">{user.displayName}</div>
+               
+              </div>
+            </div>
+            
+
+              </div>
+
+              <div className="username">{user.displayName}</div>
                 <div className="current-level">Level: {userLevel}</div>
                 <div className="progress-bar">
                   <div className="progress" style={{ width: `${progress}%` }} />
@@ -440,9 +476,11 @@ useEffect(() => {
 
                 <button className="completed-tasks-history-button">Completed task history</button>
                 <button className="sign-out-button" onClick={signOut}>Sign Out</button>
-              </div>
             </div>
 
+
+
+            
             <div className="todo-column">
               <h1>10.000 horas</h1>
               <p>Add your daily chores and learning. Complete them. Progress in life and in the game.</p>
@@ -643,7 +681,7 @@ useEffect(() => {
         }}
         onCancel={() => setIsTimerModalOpen(false)}
       />
-    </div>
+  </div>
   );
 }
 

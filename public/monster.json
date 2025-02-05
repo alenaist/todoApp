@@ -1,0 +1,10 @@
+{
+    "frames": {
+        "frame1": { "x": 0, "y": 0, "w": 64, "h": 64 },
+        "frame2": { "x": 64, "y": 0, "w": 64, "h": 64 },
+        "frame3": { "x": 128, "y": 0, "w": 64, "h": 64 }
+    },
+    "animations": {
+        "walk": ["frame1", "frame2", "frame3"]
+    }
+}

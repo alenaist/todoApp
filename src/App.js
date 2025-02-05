@@ -14,7 +14,9 @@ import { EyeClosed } from './components/icons/ClosedEyeIcon';
 import { Checkmark } from './components/icons/CheckIcon';
 import { Undo1 } from './components/icons/Undo';
 import TaskInput from './components/task-input/TaskInput';
-import CustomDropdown from './components/custom-dropdown/CustomDropdown';
+import { callDeepSeek } from './api/deepseekCall';
+import axios from 'axios';
+import AnimatedAvatar from './components/animatedAvatar/AnimatedAvatar';
 
 function App() {
   const [todo, setTodo] = useState([]);
@@ -38,6 +40,9 @@ function App() {
   const isFirstRender = useRef(true);
   const [isCompletedVisible, setIsCompletedVisible] = useState(false);
   const isInitialLoad = useRef(true);
+
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
 
   const loadUserData = async (user) => {
     try {
@@ -162,7 +167,12 @@ function App() {
         setIsLoading(false);
       }
     });
-  
+
+   // Example usage
+
+
+
+
     return () => {
       mounted = false;
       unsubscribe();
@@ -188,6 +198,7 @@ useEffect(() => {
 
   return () => clearTimeout(timeoutId);
 }, [todo, completed, progress, userLevel, user, dataLoaded]);
+
 
   // Update progress and handle level-up
   const updateProgress = (newProgress) => {
@@ -215,7 +226,7 @@ useEffect(() => {
   };
 
   // Add Task Logic
-  const addTask = () => {
+  const  addTask = async () => {
     if (!isTimerRunning && newTask.trim() !== '') {
       const newTaskObj = {
         id: uuidv4(),
@@ -227,10 +238,20 @@ useEffect(() => {
       setTodo([newTaskObj, ...todo]);
       setNewTask('');
     }
+
+   
+      const response = await callDeepSeek({
+        role: "user",
+        content: `User added a task called: ${newTask}`
+      });
+    setResults(response);
+    console.log(results)
+
+
   };
 
   // Add Timed Task Logic
-  const addTimedTask = (taskName, duration, importance) => {
+  const addTimedTask = async (taskName, duration, importance) => {
     if (!isTimerRunning) {
       const newTaskObj = {
         id: uuidv4(),
@@ -244,6 +265,14 @@ useEffect(() => {
       };
       setTodo([newTaskObj, ...todo]);
     }
+
+    const response = await callDeepSeek({
+      role: "user",
+      content: `User added a timed task called: ${taskName}`
+    });
+  setResults(response);
+
+  
   };
 
   // Handle Remove Task Click
@@ -266,7 +295,7 @@ useEffect(() => {
   };
 
   // Toggle Task Completion Logic
-  const toggleTaskCompletion = (id) => {
+  const toggleTaskCompletion = async (id) => {
     if (!isTimerRunning) {
       const task = todo.find(task => task.id === id) || completed.find(task => task.id === id);
       if (task && task.type !== 'timed') {
@@ -282,6 +311,13 @@ useEffect(() => {
           setTodo([{ ...task, completed: false }, ...todo]);
           setCompletedHistory((prevHistory) => prevHistory.filter((historyTask) => historyTask.id !== id));
           updateProgress(progress - expPoints);
+
+          const response = await callDeepSeek({
+            role: "user",
+            content: `User did an undo of a finished task called: ${task.text}`
+          });
+          setResults(response);
+
         } else {
           // Mark as completed
           const completedTask = { ...task, completed: true, finishedDate: new Date().toISOString() };
@@ -289,6 +325,14 @@ useEffect(() => {
           setCompleted([completedTask, ...completed]);
           setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
           updateProgress(progress + expPoints);
+
+          const response = await callDeepSeek({
+            role: "user",
+            content: `User completed a task called: ${task.text}`
+          });
+          setResults(response);
+
+        
         }
       }
     }
@@ -460,7 +504,7 @@ useEffect(() => {
               <div className="user-profile">
                 <div className="avatar"> 
 
-                  <img src={user.photoURL} alt="User Avatar" />
+                  <AnimatedAvatar message={ results } />
                 </div>
 
                
@@ -530,9 +574,9 @@ useEffect(() => {
                                     )}
 
 
-                                    <div class="item-task-container">
-                                      <p class="item-task">{task.text}</p>
-                                      {task.type !== 'timed' && <p class="item-task-level"> Importance: {task.importance}</p> }
+                                    <div className="item-task-container">
+                                      <p className="item-task">{task.text}</p>
+                                      {task.type !== 'timed' && <p className="item-task-level"> Importance: {task.importance}</p> }
                               
                                     </div>
 
@@ -590,9 +634,9 @@ useEffect(() => {
                                     >
 
 
-                                    <div class="item-task-container">
-                                      <p class="item-task completed-task">{task.text}</p>
-                                      {task.type !== 'timed' && <p class="item-task-level completed-task"> Importance: {task.importance}</p> }
+                                    <div className="item-task-container">
+                                      <p className="item-task completed-task">{task.text}</p>
+                                      {task.type !== 'timed' && <p className="item-task-level completed-task"> Importance: {task.importance}</p> }
                                     </div>
 
 
@@ -648,6 +692,18 @@ useEffect(() => {
         }}
         onCancel={() => setIsTimerModalOpen(false)}
       />
+      <div>{ results }</div>
+          <button 
+            onClick={async () => {
+            const response = await callDeepSeek({
+            role: "user",
+            content: "User added a task called: fist fighting with grandma"
+        });
+        setResults(response);
+      }}
+    >
+      Click me for AI stuff
+    </button>
   </div>
   );
 }

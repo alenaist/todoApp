@@ -692,18 +692,6 @@ useEffect(() => {
         }}
         onCancel={() => setIsTimerModalOpen(false)}
       />
-      <div>{ results }</div>
-          <button 
-            onClick={async () => {
-            const response = await callDeepSeek({
-            role: "user",
-            content: "User added a task called: fist fighting with grandma"
-        });
-        setResults(response);
-      }}
-    >
-      Click me for AI stuff
-    </button>
   </div>
   );
 }

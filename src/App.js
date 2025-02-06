@@ -21,10 +21,9 @@ import AnimatedAvatar from './components/animatedAvatar/AnimatedAvatar';
 import mercadopago from 'mercadopago';
 
 // Configure the library
-mercadopago.configure({
+/* mercadopago.configure({
   access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
-});
-
+}); */
 
 
 function App() {

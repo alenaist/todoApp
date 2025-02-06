@@ -22,9 +22,9 @@ const AnimatedAvatar = ({ message }) => {
                     message || '', 
                     { 
                         color: '#000', 
-                        fontSize: '12px',
+                        fontSize: '16px',
                         align: 'center',
-                        wordWrap: { width: 180 }
+                        wordWrap: { width: 250 }
                     }
                 ).setOrigin(0.5);
             }

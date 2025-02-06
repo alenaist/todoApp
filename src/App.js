@@ -18,6 +18,15 @@ import { callDeepSeek } from './api/deepseekCall';
 import axios from 'axios';
 import AnimatedAvatar from './components/animatedAvatar/AnimatedAvatar';
 
+import mercadopago from 'mercadopago';
+
+// Configure the library
+mercadopago.configure({
+  access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN
+});
+
+
+
 function App() {
   const [todo, setTodo] = useState([]);
   const [completed, setCompleted] = useState([]);

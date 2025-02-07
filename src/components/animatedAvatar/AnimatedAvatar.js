@@ -8,7 +8,6 @@ const DebugAnimatedAvatar = ({ message, isLoadingApiCall }) => {
 
     useEffect(() => {
         if (!containerRef.current) return;
-
         class MessageScene extends Phaser.Scene {
             constructor() {
                 super('MessageScene');

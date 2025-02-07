@@ -52,6 +52,17 @@ function App() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
 
+  const [boxHeight, setBoxHeight] = useState('auto'); // Initial state to open
+  const [isLoadingApiCall, setIsLoadingApiCall] = useState(false);
+
+
+  useEffect(() => {
+    const box = document.querySelector('.box');
+    if (box) {
+      setBoxHeight(box.scrollHeight + 'px');
+    }
+  }, []);
+
   const loadUserData = async (user) => {
     try {
       const userRef = doc(firestore, 'users', user.uid);
@@ -234,7 +245,7 @@ useEffect(() => {
   };
 
   // Add Task Logic
-  const  addTask = async () => {
+  const addTask = async () => {
     if (!isTimerRunning && newTask.trim() !== '') {
       const newTaskObj = {
         id: uuidv4(),
@@ -245,17 +256,20 @@ useEffect(() => {
       };
       setTodo([newTaskObj, ...todo]);
       setNewTask('');
+
+      setIsLoadingApiCall(true); // Iniciar carga
+      try {
+        const response = await callDeepSeek({
+          role: "user",
+          content: `User added a task called: ${newTask}`
+        });
+        setResults(response);
+      } catch (error) {
+        console.error("Error calling DeepSeek API:", error);
+      } finally {
+        setIsLoadingApiCall(false); // Finalizar carga
+      }
     }
-
-   
-      const response = await callDeepSeek({
-        role: "user",
-        content: `User added a task called: ${newTask}`
-      });
-    setResults(response);
-    console.log(results)
-
-
   };
 
   // Add Timed Task Logic
@@ -320,11 +334,18 @@ useEffect(() => {
           setCompletedHistory((prevHistory) => prevHistory.filter((historyTask) => historyTask.id !== id));
           updateProgress(progress - expPoints);
 
-          const response = await callDeepSeek({
-            role: "user",
-            content: `User did an undo of a finished task called: ${task.text}`
-          });
-          setResults(response);
+          setIsLoadingApiCall(true); // Iniciar carga
+          try {
+            const response = await callDeepSeek({
+              role: "user",
+              content: `User did an undo of a finished task called: ${task.text}`
+            });
+            setResults(response);
+          } catch (error) {
+            console.error("Error calling DeepSeek API:", error);
+          } finally {
+            setIsLoadingApiCall(false); // Finalizar carga
+          }
 
         } else {
           // Mark as completed
@@ -334,13 +355,18 @@ useEffect(() => {
           setCompletedHistory((prevHistory) => [completedTask, ...prevHistory]);
           updateProgress(progress + expPoints);
 
-          const response = await callDeepSeek({
-            role: "user",
-            content: `User completed a task called: ${task.text}`
-          });
-          setResults(response);
-
-        
+          setIsLoadingApiCall(true); // Iniciar carga
+          try {
+            const response = await callDeepSeek({
+              role: "user",
+              content: `User completed a task called: ${task.text}`
+            });
+            setResults(response);
+          } catch (error) {
+            console.error("Error calling DeepSeek API:", error);
+          } finally {
+            setIsLoadingApiCall(false); // Finalizar carga
+          }
         }
       }
     }
@@ -378,21 +404,20 @@ useEffect(() => {
 
   function toggleBox() {
     const box = document.querySelector('.box');
-    
-    if (box.style.height === '0px' || !box.style.height) {
+
+    if (boxHeight === '0px') {
       // Expand to full content height
-      box.style.height = 'auto';
       const fullHeight = box.scrollHeight + 'px';
-      box.style.height = '0px';
-      
-      requestAnimationFrame(() => {
-        box.style.height = fullHeight;
-        setAvatarIsOpen(true);
-      });
+      setBoxHeight(fullHeight);
+      setAvatarIsOpen(true);
     } else {
-      // Collapse
-      box.style.height = '0px';
-      setAvatarIsOpen(false);
+      // Collapse with animation
+      const currentHeight = box.scrollHeight + 'px';
+      box.style.height = currentHeight; // Set current height to trigger transition
+      requestAnimationFrame(() => {
+        setBoxHeight('0px');
+        setAvatarIsOpen(false);
+      });
     }
   }
 
@@ -507,18 +532,17 @@ useEffect(() => {
   >
     {avatarIsOpen ? <EyeClosed /> : <Eye />}
   </button>
-              <div className="box">
-              <div className="avatar-column">
-              <div className="user-profile">
+              <div className="box" style={{ height: boxHeight }}>
+          
+         
                 <div className="avatar"> 
 
-                  <AnimatedAvatar message={ results } />
+                  <AnimatedAvatar message={ results } isLoadingApiCall={isLoadingApiCall} />
                 </div>
 
                
-              </div>
-            </div>
-            
+             
+       
 
               </div>
 
